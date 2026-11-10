@@ -1,0 +1,11 @@
+# Reproducibility preflight for the real-data code. Does not run the expensive full grid.
+options(stringsAsFactors=FALSE)
+source("config/real_data_config.R", local=.GlobalEnv)
+for (f in sort(list.files("R", pattern="\\.R$", full.names=TRUE))) source(f, local=.GlobalEnv)
+run_internal_checks()
+panel <- prepare_hmd_panel(DATA_FILE,"ITA","Italy",c(1960L,2014L),c(0L,40L),BETA_BOUNDARY_ACTION)
+b <- build_age_basis(panel$ages,SPLINE_DEGREE,N_INNER_KNOTS)
+a <- fit_beta_year_hmm(panel,b,K=2L,lambda=0.5,n_start=2L,n_cores=1L,max_iter=40L,optimizer_maxit=50L,seed=SEED+990001L)
+z <- fit_beta_year_hmm(panel,b,K=2L,lambda=0.5,n_start=2L,n_cores=1L,max_iter=40L,optimizer_maxit=50L,seed=SEED+990001L)
+stopifnot(isTRUE(all.equal(a$loglik_obs,z$loglik_obs,tolerance=1e-10)),isTRUE(all.equal(a$A,z$A,tolerance=1e-10)),identical(a$viterbi,z$viterbi))
+cat("PASS: real-data repeated-fit determinism audit.\n")

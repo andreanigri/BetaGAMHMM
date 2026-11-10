@@ -1,0 +1,11 @@
+# Determinism audit for the repeated-profile likelihood.
+options(stringsAsFactors=FALSE)
+for (f in sort(list.files("R", pattern="\\.R$", full.names=TRUE))) source(f, local=.GlobalEnv)
+source("config/study_config.R", local=.GlobalEnv)
+cfg <- make_profile_config("quick")
+sim <- simulate_profile_scenario(cfg$scenarios$baseline_T55, cfg$seed + 990001L)
+basis <- build_age_basis(sim$panel$ages,cfg$basis$degree,cfg$basis$n_inner_knots)
+args <- list(panel=sim$panel,basis_spec=basis,K=4L,lambda=0.5,n_start=2L,n_cores=1L,max_iter=80L,optimizer_maxit=60L,seed=cfg$seed+990002L)
+f1 <- do.call(fit_beta_year_hmm,args); f2 <- do.call(fit_beta_year_hmm,args)
+stopifnot(isTRUE(all.equal(f1$loglik_obs,f2$loglik_obs,tolerance=1e-10)), isTRUE(all.equal(f1$phi,f2$phi,tolerance=1e-10)), isTRUE(all.equal(f1$A,f2$A,tolerance=1e-10)), identical(f1$viterbi,f2$viterbi))
+cat("PASS: profile repeated-fit determinism audit.\n")

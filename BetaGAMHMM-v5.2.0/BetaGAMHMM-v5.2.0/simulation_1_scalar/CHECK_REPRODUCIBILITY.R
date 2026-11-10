@@ -1,0 +1,10 @@
+# Determinism audit: identical data + identical seeds must reproduce the same fit.
+options(stringsAsFactors=FALSE)
+for (f in sort(list.files("R", pattern="\\.R$", full.names=TRUE))) source(f, local=.GlobalEnv)
+source("config/study_config.R", local=.GlobalEnv)
+cfg <- make_study_config("quick")
+sim <- simulate_revision_scenario(cfg$scenarios$baseline, cfg$basis, cfg$seed + 990001L)
+args <- list(y=sim$y,basis_spec=sim$basis_spec,K=4L,lambda=0.1,n_start=2L,n_start_cores=1L,max_iter=80L,optimizer_maxit=60L,diagnostic=cfg$diagnostic,seed=cfg$seed+990002L)
+f1 <- do.call(fit_beta_gam_hmm,args); f2 <- do.call(fit_beta_gam_hmm,args)
+stopifnot(isTRUE(all.equal(f1$loglik_obs,f2$loglik_obs,tolerance=1e-10)), isTRUE(all.equal(f1$phi,f2$phi,tolerance=1e-10)), isTRUE(all.equal(f1$A,f2$A,tolerance=1e-10)), identical(f1$viterbi,f2$viterbi))
+cat("PASS: scalar repeated-fit determinism audit.\n")
